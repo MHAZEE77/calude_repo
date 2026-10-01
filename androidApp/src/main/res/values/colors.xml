@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#021DA5</color>
+    <color name="colorPrimaryDark">#225AB8</color>
+    <color name="colorAccent">#11E3AB</color>
+    <color name="colorAccentDark">#6EA95C</color>
+    <color name="colorAccentLight">#ECF6FF</color>
+    <color name="accentLight">#E7FCF7</color>
+    <color name="colorBackgroundLight">#FAFAFA</color>
+    <color name="colorBackgroundDark">#C9CCD5</color>
+    <color name="lightBackground">#e6e8f6</color>
+    <color name="textColor">#919191</color>
+    <color name="textColorDarker">#5b5b5b</color>
+    <color name="colorLight">#F1F1F1</color>
+    <color name="tabSelected">#E1E4F2</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorBlack">#000000</color>
+    <color name="placeholder_color">#909BAE</color>
+    <color name="transparent">#4D000000</color>
+    <color name="scanner_line">#00ceff</color>
+    <color name="primaryText">#172B4D</color>
+    <color name="secondaryText">#BF172B4D</color>
+    <color name="connectivity">#0065FF</color>
+    <color name="success">#36B37E</color>
+    <color name="activity">#00A3BF</color>
+    <color name="warning">#FFAB00</color>
+    <color name="failure">#CC3E1A</color>
+    <color name="tags">#091E42</color>
+    <!--Status color-->
+    <color name="successStatusBackground">#5636B37E</color>
+    <color name="warningStatusBackground">#56FFAB00</color>
+    <color name="failureStatusBackground">#56CC3E1A</color>
+    <color name="activityStatusBackground">#5700A3BF</color>
+    <color name="textGreen">#00B012</color>
+    <color name="red">#CF1020</color>
+    <color name="light_blue">#007EF5</color>
+    <color name="gray_01">#76859A</color>
+    <color name="gradient_start">#1E61AF</color>
+    <color name="gradient_end">#4DD6C6</color>
+
+
+</resources>

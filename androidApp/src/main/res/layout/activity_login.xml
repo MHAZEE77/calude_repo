@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fill_gradient"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="32dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:id="@+id/lnContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gray_stroke_no_fill"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingTop="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/enter_credentials"
+                android:textColor="@color/gray_01"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                style="@style/edit_text_auth_style"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="@null"
+                android:paddingStart="0dp"
+                android:text="@string/email" />
+
+            <EditText
+                android:id="@+id/usernameEditText"
+                style="@style/edit_text_auth_style"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:autofillHints="emailAddress,username"
+                android:ems="10"
+                android:gravity="start|center_vertical"
+                android:hint="@string/email_hint"
+                android:imeOptions="actionNext"
+                android:importantForAutofill="yes"
+                android:inputType="textEmailAddress"
+                android:maxLines="1"
+                android:textAlignment="viewStart"
+                android:textColor="@color/gray_01" />
+
+            <TextView
+                style="@style/edit_text_auth_style"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="@null"
+                android:paddingStart="0dp"
+                android:text="@string/password" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.silkysys.warehouse.app.ui.view.PasswordEditText
+                    android:id="@+id/passwordEditText"
+                    style="@style/edit_text_auth_style"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:hint="@string/password_hint"
+                    android:imeOptions="actionDone"
+                    android:drawablePadding="8dp" />
+
+            </FrameLayout>
+
+            <CheckBox
+                android:id="@+id/cb_remeberMe"
+                style="@style/sub_title_style"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:buttonTint="@color/colorPrimary"
+                android:gravity="center_vertical"
+                android:minHeight="48dp"
+                android:text="@string/remember_email"
+                android:textColor="@color/placeholder_color"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/signInButton"
+                style="@style/button_style"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/round_edges"
+                android:minHeight="48dp"
+                android:text="@string/sign_in" />
+
+            <TextView
+                android:id="@+id/tv_forgot_password"
+                style="@style/sub_title_style"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:gravity="center"
+                android:text="@string/forgot_password"
+                android:textColor="@color/light_blue"
+                />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="20dp"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="wrap_content"
+                android:contentDescription="@null"
+                android:importantForAccessibility="no"
+                android:src="@drawable/silky_logo" />
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="10dp"
+                android:contentDescription="@string/silky_systems"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:src="@drawable/silky_text" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Your main background + border + corners -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />          <!-- white background -->
+            <stroke
+                android:width="1dp"
+                android:color="#D9DFE8" />            <!-- your border color -->
+            <corners android:radius="8dp" />
+            <!-- Optional: padding inside the spinner content -->
+            <padding
+                android:bottom="8dp"
+                android:left="8dp"
+                android:right="8dp"
+                android:top="8dp" />
+        </shape>
+    </item>
+
+    <item
+        android:drawable="@drawable/ic_arrow_drop"
+        android:gravity="end|center_vertical"
+        android:right="8dp" />
+
+</layer-list>

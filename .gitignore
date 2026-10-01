@@ -1,0 +1,43 @@
+# Gradle and Kotlin
+.gradle/
+.kotlin/
+**/build/
+!src/**/build/
+
+# Local Android configuration
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE and OS
+*.iml
+.idea/
+.DS_Store
+Thumbs.db
+
+# Apple/Xcode user data
+xcuserdata/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+
+# Secrets and signing material
+*.jks
+*.keystore
+keystore.properties
+*.p12
+*.pem
+.env
+.env.*
+
+# Logs and generated artifacts
+*.log
+*.apk
+*.aab
+
+# Keep the Gradle wrapper executable and JAR under version control
+!gradle/wrapper/gradle-wrapper.jar

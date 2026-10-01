@@ -1,0 +1,154 @@
+{
+  "passed": 37,
+  "failed": 0,
+  "checks": [
+    {
+      "status": "PASS",
+      "message": "Application manifest node exists"
+    },
+    {
+      "status": "PASS",
+      "message": "Cloud backup is disabled"
+    },
+    {
+      "status": "PASS",
+      "message": "Cleartext traffic is disabled"
+    },
+    {
+      "status": "PASS",
+      "message": "Network security config is enforced"
+    },
+    {
+      "status": "PASS",
+      "message": "Only launcher activity is exported"
+    },
+    {
+      "status": "PASS",
+      "message": "No broad FileProvider is declared"
+    },
+    {
+      "status": "PASS",
+      "message": "Permission set is minimized"
+    },
+    {
+      "status": "PASS",
+      "message": "Release build is non-debuggable"
+    },
+    {
+      "status": "PASS",
+      "message": "Release shrinking is enabled"
+    },
+    {
+      "status": "PASS",
+      "message": "Release configuration gate is present"
+    },
+    {
+      "status": "PASS",
+      "message": "Signing passwords are not embedded"
+    },
+    {
+      "status": "PASS",
+      "message": "No email account is hardcoded in source"
+    },
+    {
+      "status": "PASS",
+      "message": "No password-like value is hardcoded in source"
+    },
+    {
+      "status": "PASS",
+      "message": "No full network logging is enabled"
+    },
+    {
+      "status": "PASS",
+      "message": "No Android runtime logging calls remain"
+    },
+    {
+      "status": "PASS",
+      "message": "No stdout response logging remains"
+    },
+    {
+      "status": "PASS",
+      "message": "Passwords are not persisted"
+    },
+    {
+      "status": "PASS",
+      "message": "Unverified proprietary scanner class is not linked"
+    },
+    {
+      "status": "PASS",
+      "message": "Unprotected scanner broadcast action is removed"
+    },
+    {
+      "status": "PASS",
+      "message": "Session storage uses Android Keystore AES-GCM"
+    },
+    {
+      "status": "PASS",
+      "message": "Session lifecycle controls are implemented"
+    },
+    {
+      "status": "PASS",
+      "message": "No signing keystore is stored in the project"
+    },
+    {
+      "status": "PASS",
+      "message": "All Android XML resources parse"
+    },
+    {
+      "status": "PASS",
+      "message": "All layout text and hints use resources"
+    },
+    {
+      "status": "PASS",
+      "message": "All image controls declare accessibility semantics"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: AddStockActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: MainActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: ProfileActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: UpdatePasswordActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: AddPackActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: PackActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: PackDetailsActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: PickActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: PickItemsActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: PutAwayActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: ProductDetailsActivity.kt"
+    },
+    {
+      "status": "PASS",
+      "message": "Session gate: BarcodeScanner.kt"
+    }
+  ]
+}

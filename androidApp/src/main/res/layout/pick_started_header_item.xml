@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/items_border"
+     android:layout_margin="5dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+       >
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight=".7"
+            android:fontFamily="@font/bold_medium"
+            android:textAlignment="center"
+            android:text="@string/header_id"
+            android:textColor="@color/colorAccent"
+            android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+             android:layout_weight="1.1"
+            style="@style/sub_title_style"
+            android:textAlignment="center"
+            android:fontFamily="@font/bold_medium"
+            android:textColor="@color/colorAccent"
+             android:text="@string/header_order"/>
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1.1"
+            android:textAlignment="center"
+            android:fontFamily="@font/bold_medium"
+            style="@style/sub_title_style"
+            android:textColor="@color/colorAccent"
+             android:text="@string/header_products"/>
+        <TextView
+            android:id="@+id/dateTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:visibility="gone"
+            android:text="@string/start_at"
+            android:textAlignment="center"
+            android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+             android:layout_weight="1.1"
+            android:textAlignment="center"
+            android:fontFamily="@font/bold_medium"
+            style="@style/sub_title_style"
+            android:textColor="@color/colorAccent"
+             android:text="@string/status"/>
+    </LinearLayout>
+</LinearLayout>
