@@ -2,21 +2,18 @@ package com.silkysys.warehouse.app.network
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import com.silkysys.warehouse.BuildConfig
 import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.error_handle.AuthEvent
 import com.silkysys.warehouse.app.error_handle.InterceptorHandledException
 import com.silkysys.warehouse.app.ui.utility.SavePref
+import com.silkysys.warehouse.app.ui.utility.Utility.generateIdempotencyKey
 import com.silkysys.warehouse.sharedcode.data.remote.ApiService
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.accept
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
@@ -116,6 +113,4 @@ fun provideHttpClient(savePref: SavePref, context: Context): HttpClient = HttpCl
             throw exception
         }
     }
-}.also { client ->
-    client.installOperationIdempotency(PendingOperationStore(context))
 }

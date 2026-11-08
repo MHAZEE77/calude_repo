@@ -4,15 +4,16 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.compose.setContent
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.model.AppUpdateType.IMMEDIATE
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.firebase.installations.FirebaseInstallations
-import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.autentcation.login.LoginActivity
 import com.silkysys.warehouse.app.autentcation.main.activity.MainActivity
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
+import com.silkysys.warehouse.app.ui.compose_ui.SplashScreen
 import com.silkysys.warehouse.app.ui.utility.SavePref
 
 class LauncherActivity : BaseActivity() {
@@ -23,7 +24,7 @@ class LauncherActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         savePref = SavePref(this)
-        setContentView(R.layout.activity_launcher)
+        setContent { SplashScreen() }
         appUpdateManager = AppUpdateManagerFactory.create(this)
 
         FirebaseInstallations.getInstance().getToken(false)
@@ -82,7 +83,7 @@ class LauncherActivity : BaseActivity() {
     }
 
     companion object {
-        private const val SPLASH_DELAY_MS = 1_200L
+        private const val SPLASH_DELAY_MS = 3000L
         private const val UPDATE_REQUEST_CODE = 1
     }
 }

@@ -73,6 +73,7 @@ class PackActivity : BaseActivity(), PackAdapter.OnClickListener {
     }
 
     private fun successGetPackList(packListEntity: PackListEntity) {
+        setLoading(false)
         if (packListEntity.fulfillments.isNotEmpty()) {
             adapter = PackAdapter(packListEntity.fulfillments, this)
             binding.rvPackList.layoutManager = LinearLayoutManager(this)

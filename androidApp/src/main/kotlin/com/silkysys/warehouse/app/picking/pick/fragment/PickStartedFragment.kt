@@ -92,6 +92,7 @@ class PickStartedFragment() : Fragment() {
     }
 
     private fun handleSuccessGetStarted(pickEntity: PickEntity) {
+        setLoading(false)
         started = pickEntity.fulfillments.started
         bindPickViewModel()
     }

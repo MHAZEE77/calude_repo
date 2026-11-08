@@ -72,6 +72,7 @@ class PickWaitingFragment() : Fragment(), PickWaitingAdapter.OnItemCheckListener
     }
 
     private fun handleSuccessGetWaiting(pickEntity: PickEntity) {
+        setLoading(false)
         waiting = pickEntity.fulfillments.waiting.toMutableList()
         adapter = PickWaitingAdapter(waiting as MutableList<PickEntity.Fulfillments.Waiting>, this)
         bindViewModelObserver()
