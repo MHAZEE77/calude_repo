@@ -9,6 +9,7 @@ import com.silkysys.warehouse.app.autentcation.login.LoginViewModel
 import com.silkysys.warehouse.app.autentcation.main.MainViewModel
 import com.silkysys.warehouse.app.autentcation.profile.ProfileViewModel
 import com.silkysys.warehouse.app.autentcation.forgetPasswordSendEmail.SendEmailViewmodel
+import com.silkysys.warehouse.app.network.networkModule
 import com.silkysys.warehouse.app.packing.addPack.AddPackViewModel
 import com.silkysys.warehouse.app.packing.pack.PackViewModel
 import com.silkysys.warehouse.app.packing.packDetails.PackDetailsViewModel

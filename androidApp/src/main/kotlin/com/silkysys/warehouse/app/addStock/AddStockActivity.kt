@@ -15,7 +15,9 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -56,6 +58,7 @@ class AddStockActivity : BaseActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var lastBarcode: String? = null
     private var lastBarcodeAt = 0L
+    var isMunBynPDA: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,7 +70,18 @@ class AddStockActivity : BaseActivity() {
         setupClickListeners()
         observeAddStock()
         observeVerifyProduct()
+        isMunBynPDA = verifyMunBynPDA()
 
+        onBackPressedDispatcher.addCallback(this) {
+            navigateHome()
+        }
+    }
+
+    fun verifyMunBynPDA(): Boolean {
+        val model = Build.MODEL.lowercase()
+        return model.contains("munbyn") ||
+                model.contains("ipda") ||
+                model.contains("035")
     }
 
     private fun handleLoading(loading: Boolean) {
@@ -131,8 +145,11 @@ class AddStockActivity : BaseActivity() {
             is AddStockStatus.SuccessAddStock -> handleAddStockSuccess(status.wrappedResponse)
             is AddStockStatus.ErrorAddStock -> {
                 handleLoading(false)
-                showErrorAlert(status.errorResponse.message ?: getString(R.string.something_went_wrong))
+                showErrorAlert(
+                    status.errorResponse.message ?: getString(R.string.something_went_wrong)
+                )
             }
+
             is AddStockStatus.ShowToast -> {
                 handleLoading(false)
                 ErrorHandler.handleException(status.message, this)
@@ -163,7 +180,12 @@ class AddStockActivity : BaseActivity() {
     }
 
     private fun setupClickListeners() {
-        binding.btStartScan.setOnClickListener { openBarcodeScanner() }
+        binding.btStartScan.setOnClickListener {
+            if (isMunBynPDA)
+                showScanDialog()
+            else
+                openBarcodeScanner()
+        }
         binding.btStartScan.setOnLongClickListener {
             showSimpleInputDialog()
             true
@@ -172,22 +194,20 @@ class AddStockActivity : BaseActivity() {
         binding.btUpdateStock.setOnClickListener { updateStockData() }
     }
 
-    @Deprecated("Deprecated by Android")
-    override fun onBackPressed() = navigateHome()
-
     private fun navigateHome() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
 
-    private val barcodeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.getStringExtra("BARCODE_VALUE")?.let(::acceptBarcode)
-                ?: toast(getString(R.string.error_in_scanning))
-        } else {
-            toast(getString(R.string.error_in_scanning))
+    private val barcodeLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.getStringExtra("BARCODE_VALUE")?.let(::acceptBarcode)
+                    ?: toast(getString(R.string.error_in_scanning))
+            } else {
+                toast(getString(R.string.error_in_scanning))
+            }
         }
-    }
 
     private fun openBarcodeScanner() {
         barcodeLauncher.launch(Intent(this, BarcodeScanningActivity::class.java))
@@ -207,10 +227,13 @@ class AddStockActivity : BaseActivity() {
         when {
             binding.tvItemcode.text == getString(R.string.not_active) ->
                 customAlertDialog(null, getString(R.string.scan_item_barcode_first_to_proceed))
+
             quantity == null || quantity <= 0 ->
                 customAlertDialog(null, getString(R.string.add_item_quantity_to_proceed))
+
             selectedWarehouse == null ->
                 customAlertDialog(null, getString(R.string.select_warehouse_to_proceed))
+
             else -> AlertDialog.Builder(this)
                 .setTitle(getString(R.string.add_stock))
                 .setMessage(getString(R.string.do_you_want_to_add_this_stock))
@@ -242,7 +265,12 @@ class AddStockActivity : BaseActivity() {
         adapterBin = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, binList)
         binding.spnBin.adapter = adapterBin
         binding.spnWarehouse.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 if (position in 1..warehouseList.size) {
                     val warehouse = warehouseList[position - 1]
                     selectedWarehouse = warehouse.id.toString()
@@ -254,6 +282,7 @@ class AddStockActivity : BaseActivity() {
                     adapterBin?.notifyDataSetChanged()
                 }
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
     }
@@ -264,9 +293,15 @@ class AddStockActivity : BaseActivity() {
         binList.addAll(bins.map { it.code })
         adapterBin?.notifyDataSetChanged()
         binding.spnBin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 selectedBinLocation = bins.getOrNull(position - 1)?.id?.toString()
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
         binding.spnBin.setSelection(0)
@@ -304,7 +339,9 @@ class AddStockActivity : BaseActivity() {
     private fun playSound(resource: Int) {
         mediaPlayer?.release()
         mediaPlayer = MediaPlayer.create(applicationContext, resource)?.apply {
-            setOnCompletionListener { player -> player.release(); if (mediaPlayer === player) mediaPlayer = null }
+            setOnCompletionListener { player ->
+                player.release(); if (mediaPlayer === player) mediaPlayer = null
+            }
             start()
         }
     }
@@ -321,5 +358,34 @@ class AddStockActivity : BaseActivity() {
 
     companion object {
         private const val BARCODE_DEBOUNCE_MS = 750L
+    }
+
+    fun showScanDialog() {
+        val builder = AlertDialog.Builder(this)
+        val inflater = layoutInflater
+        val dialogLayout = inflater.inflate(R.layout.barcode_dialog, null)
+        val editText = dialogLayout.findViewById<EditText>(R.id.editText)
+        editText.requestFocus()
+        builder.setView(dialogLayout)
+        editText.inputType = InputType.TYPE_NULL
+        editText.setTextIsSelectable(true)
+
+        builder.setNegativeButton("Close") { dialog, _ ->
+            dialog.dismiss()
+        }
+
+        builder.setPositiveButton("Enter Code") { dialog, _ ->
+            dialog.dismiss()
+            showSimpleInputDialog()
+        }
+
+        val dialog = builder.create()
+
+        editText.doAfterTextChanged { editable ->
+            val text = editable.toString()
+            verifyProductFromAPI(text)
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 }
