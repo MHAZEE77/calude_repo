@@ -10,19 +10,17 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.text.InputType
 import android.view.MenuItem
-import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.addCallback
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.widget.doAfterTextChanged
+import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import coil.load
-import coil.size.Scale
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.autentcation.main.MainViewModel
 import com.silkysys.warehouse.app.autentcation.main.ProductInfoStatus
@@ -30,11 +28,12 @@ import com.silkysys.warehouse.app.autentcation.main.activity.MainActivity
 import com.silkysys.warehouse.app.error_handle.ErrorHandler
 import com.silkysys.warehouse.app.security.BarcodeInputValidator
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
+import com.silkysys.warehouse.app.ui.compose_ui.addstock.AddStockFormState
+import com.silkysys.warehouse.app.ui.compose_ui.addstock.AddStockScreen
+import com.silkysys.warehouse.app.ui.compose_ui.addstock.BarcodeDialogContent
 import com.silkysys.warehouse.app.ui.utility.BarcodeScanningActivity
-import com.silkysys.warehouse.app.ui.utility.Utility
 import com.silkysys.warehouse.app.ui.utility.extension.customAlertDialog
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
-import com.silkysys.warehouse.databinding.ActivityAddStockBinding
 import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
 import com.silkysys.warehouse.sharedcode.domain.addstock.AddStockRequest
 import com.silkysys.warehouse.sharedcode.domain.addstock.ProductInfoEntity
@@ -43,18 +42,21 @@ import com.silkysys.warehouse.wms.app.ui.utility.ToastHelper.toast
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
 
 class AddStockActivity : BaseActivity() {
-    private lateinit var progressDialog: AlertDialog
-    private lateinit var binding: ActivityAddStockBinding
+    private var showProgress by mutableStateOf(false)
+    private val form = AddStockFormState()
     private val addStockViewModel: AddStockViewModel by viewModel()
     private val mainViewModel: MainViewModel by viewModel()
 
     private var selectedWarehouse: String? = null
     private var selectedBinLocation: String? = null
     private var warehouseList: List<ProductInfoResponse.Warehouse> = emptyList()
-    private var adapterBin: ArrayAdapter<String?>? = null
-    private val binList = mutableListOf<String?>()
+    private var currentBins: List<ProductInfoResponse.Warehouse.BinLocation> = emptyList()
     private var mediaPlayer: MediaPlayer? = null
     private var lastBarcode: String? = null
     private var lastBarcodeAt = 0L
@@ -64,10 +66,27 @@ class AddStockActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         if (!requireAuthenticatedSession()) return
 
-        progressDialog = Utility.getProgressDialog(this)
-        binding = ActivityAddStockBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        setupClickListeners()
+        form.itemCode = getString(R.string.not_active)
+        form.itemName = getString(R.string.not_active)
+        form.quantity = getString(R.string.zero)
+        setContent {
+            AddStockScreen(
+                form = form,
+                onWarehouseSelected = ::onWarehouseSelected,
+                onBinSelected = ::onBinSelected,
+                onBack = { navigateHome() },
+                onScan = {
+                    if (isMunBynPDA)
+                        showScanDialog()
+                    else
+                        openBarcodeScanner()
+                },
+                onScanLongClick = { showSimpleInputDialog() },
+                onUpdateStock = { updateStockData() },
+            )
+
+            if (showProgress) AppProgressDialog()
+        }
         observeAddStock()
         observeVerifyProduct()
         isMunBynPDA = verifyMunBynPDA()
@@ -85,7 +104,7 @@ class AddStockActivity : BaseActivity() {
     }
 
     private fun handleLoading(loading: Boolean) {
-        if (loading && !isFinishing) progressDialog.show() else if (progressDialog.isShowing) progressDialog.dismiss()
+        showProgress = loading && !isFinishing
     }
 
     private fun observeAddStock() {
@@ -129,12 +148,8 @@ class AddStockActivity : BaseActivity() {
         mainViewModel.resetProductInfo()
         playSound(R.raw.correct)
         warehouseList = product.warehouses
-        binding.tvItemName.text = product.name
-        binding.prodImage.load(product.image_url) {
-            scale(Scale.FIT)
-            placeholder(R.drawable.placeholder_view)
-            error(R.drawable.placeholder_view)
-        }
+        form.itemName = product.name
+        form.imageUrl = product.image_url
         setupWarehouseSpinner(product)
     }
 
@@ -159,14 +174,14 @@ class AddStockActivity : BaseActivity() {
 
     private fun handleAddStockSuccess(response: WrappedResponse<Unit>) {
         handleLoading(false)
-        binding.tvItemcode.text = getString(R.string.not_active)
-        binding.tvItemName.text = getString(R.string.not_active)
-        binding.etQty.setText("0")
+        form.itemCode = getString(R.string.not_active)
+        form.itemName = getString(R.string.not_active)
+        form.quantity = "0"
         selectedWarehouse = null
         selectedBinLocation = null
-        binding.spnWarehouse.adapter = null
-        binding.spnBin.adapter = null
-        binding.prodImage.setImageResource(R.drawable.placeholder_view)
+        form.warehouseNames.clear()
+        form.binNames.clear()
+        form.imageUrl = null
         customAlertDialog(getString(R.string.success), response.message)
         addStockViewModel.resetStatus()
     }
@@ -177,21 +192,6 @@ class AddStockActivity : BaseActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    private fun setupClickListeners() {
-        binding.btStartScan.setOnClickListener {
-            if (isMunBynPDA)
-                showScanDialog()
-            else
-                openBarcodeScanner()
-        }
-        binding.btStartScan.setOnLongClickListener {
-            showSimpleInputDialog()
-            true
-        }
-        binding.ivBack.setOnClickListener { navigateHome() }
-        binding.btUpdateStock.setOnClickListener { updateStockData() }
     }
 
     private fun navigateHome() {
@@ -223,9 +223,9 @@ class AddStockActivity : BaseActivity() {
     }
 
     private fun updateStockData() {
-        val quantity = binding.etQty.text.toString().trim().toIntOrNull()
+        val quantity = form.quantity.trim().toIntOrNull()
         when {
-            binding.tvItemcode.text == getString(R.string.not_active) ->
+            form.itemCode == getString(R.string.not_active) ->
                 customAlertDialog(null, getString(R.string.scan_item_barcode_first_to_proceed))
 
             quantity == null || quantity <= 0 ->
@@ -242,7 +242,7 @@ class AddStockActivity : BaseActivity() {
                         AddStockRequest(
                             selectedWarehouse,
                             selectedBinLocation,
-                            binding.tvItemcode.text.toString().trim(),
+                            form.itemCode.trim(),
                             quantity.toString(),
                         ),
                     )
@@ -256,66 +256,48 @@ class AddStockActivity : BaseActivity() {
         val names = arrayListOf(getString(R.string.select_warehouse_prompt)).apply {
             addAll(product.warehouses.map { it.name })
         }
-        binding.spnWarehouse.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            names,
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        form.warehouseNames.clear()
+        form.warehouseNames.addAll(names)
+        // a Spinner selects its first item as soon as it gets an adapter
+        onWarehouseSelected(0)
+    }
 
-        adapterBin = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, binList)
-        binding.spnBin.adapter = adapterBin
-        binding.spnWarehouse.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                if (position in 1..warehouseList.size) {
-                    val warehouse = warehouseList[position - 1]
-                    selectedWarehouse = warehouse.id.toString()
-                    setupBinLocationSpinner(warehouse.bin_locations)
-                } else {
-                    selectedWarehouse = null
-                    selectedBinLocation = null
-                    binList.clear()
-                    adapterBin?.notifyDataSetChanged()
-                }
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+    // spnWarehouse.onItemSelectedListener
+    private fun onWarehouseSelected(position: Int) {
+        form.selectedWarehouseIndex = position
+        if (position in 1..warehouseList.size) {
+            val warehouse = warehouseList[position - 1]
+            selectedWarehouse = warehouse.id.toString()
+            setupBinLocationSpinner(warehouse.bin_locations)
+        } else {
+            selectedWarehouse = null
+            selectedBinLocation = null
+            form.binNames.clear()
         }
     }
 
     private fun setupBinLocationSpinner(bins: List<ProductInfoResponse.Warehouse.BinLocation>) {
-        binList.clear()
-        binList.add(if (bins.isEmpty()) getString(R.string.no_items_available) else getString(R.string.select_bin_prompt))
-        binList.addAll(bins.map { it.code })
-        adapterBin?.notifyDataSetChanged()
-        binding.spnBin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                selectedBinLocation = bins.getOrNull(position - 1)?.id?.toString()
-            }
+        currentBins = bins
+        form.binNames.clear()
+        form.binNames.add(if (bins.isEmpty()) getString(R.string.no_items_available) else getString(R.string.select_bin_prompt))
+        form.binNames.addAll(bins.map { it.code })
+        onBinSelected(0)
+    }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
-        }
-        binding.spnBin.setSelection(0)
+    // spnBin.onItemSelectedListener
+    private fun onBinSelected(position: Int) {
+        form.selectedBinIndex = position
+        selectedBinLocation = currentBins.getOrNull(position - 1)?.id?.toString()
     }
 
     override fun onDestroy() {
         mediaPlayer?.release()
         mediaPlayer = null
-        if (::progressDialog.isInitialized && progressDialog.isShowing) progressDialog.dismiss()
         super.onDestroy()
     }
 
     private fun verifyProductFromAPI(sku: String) {
-        binding.tvItemcode.text = sku
+        form.itemCode = sku
         mainViewModel.getProductInfo(sku)
     }
 
@@ -362,13 +344,21 @@ class AddStockActivity : BaseActivity() {
 
     fun showScanDialog() {
         val builder = AlertDialog.Builder(this)
-        val inflater = layoutInflater
-        val dialogLayout = inflater.inflate(R.layout.barcode_dialog, null)
-        val editText = dialogLayout.findViewById<EditText>(R.id.editText)
-        editText.requestFocus()
+        lateinit var scanDialog: AlertDialog
+        val dialogLayout = ComposeView(this).apply {
+            // the dialog window is outside the activity's view tree, so give the ComposeView its owners
+            setViewTreeLifecycleOwner(this@AddStockActivity)
+            setViewTreeSavedStateRegistryOwner(this@AddStockActivity)
+            setContent {
+                BarcodeDialogContent(
+                    onBarcodeEntered = { text ->
+                        verifyProductFromAPI(text)
+                        scanDialog.dismiss()
+                    },
+                )
+            }
+        }
         builder.setView(dialogLayout)
-        editText.inputType = InputType.TYPE_NULL
-        editText.setTextIsSelectable(true)
 
         builder.setNegativeButton("Close") { dialog, _ ->
             dialog.dismiss()
@@ -379,13 +369,7 @@ class AddStockActivity : BaseActivity() {
             showSimpleInputDialog()
         }
 
-        val dialog = builder.create()
-
-        editText.doAfterTextChanged { editable ->
-            val text = editable.toString()
-            verifyProductFromAPI(text)
-            dialog.dismiss()
-        }
-        dialog.show()
+        scanDialog = builder.create()
+        scanDialog.show()
     }
 }

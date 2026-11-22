@@ -2,14 +2,12 @@ package com.silkysys.warehouse.app.autentcation.main.activity
 
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.view.MenuItem
-import android.view.View
-import android.widget.AdapterView
-import android.widget.GridView
-import androidx.core.view.GravityCompat
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -19,7 +17,6 @@ import com.silkysys.warehouse.app.addStock.AddStockActivity
 import com.silkysys.warehouse.app.autentcation.login.LoginActivity
 import com.silkysys.warehouse.app.autentcation.main.LogOutStatus
 import com.silkysys.warehouse.app.autentcation.main.MainViewModel
-import com.silkysys.warehouse.app.autentcation.main.adapter.GridRVAdapter
 import com.silkysys.warehouse.app.autentcation.main.adapter.GridViewModal
 import com.silkysys.warehouse.app.autentcation.profile.ProfileActivity
 import com.silkysys.warehouse.app.packing.pack.activity.PackActivity
@@ -27,10 +24,13 @@ import com.silkysys.warehouse.app.picking.pick.activity.PickActivity
 import com.silkysys.warehouse.app.putAway.putAway.activity.PutAwayActivity
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
 import com.silkysys.warehouse.app.ui.adapter.MainAdapter
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.ChangeLanguageDialog
+import com.silkysys.warehouse.app.ui.compose_ui.MainDrawerItem
+import com.silkysys.warehouse.app.ui.compose_ui.MainScreen
+import com.silkysys.warehouse.app.ui.utility.LocaleManager
 import com.silkysys.warehouse.app.ui.utility.SavePref
 import com.silkysys.warehouse.app.ui.utility.Utility
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
-import com.silkysys.warehouse.databinding.ActivityMainBinding
 import com.silkysys.warehouse.domain.autentcation.logOut.entity.LogOutEntity
 import com.silkysys.warehouse.sharedcode.data.autentcation.logOut.dto.LogOutResponse
 import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
@@ -40,20 +40,22 @@ import kotlinx.coroutines.flow.onEach
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import androidx.activity.OnBackPressedCallback
-
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.LogoutDialog
 
 
 class MainActivity : BaseActivity() {
 
     // Properties
-    private lateinit var mDialog: AlertDialog
-    private lateinit var binding: ActivityMainBinding
+    private var showProgress by mutableStateOf(false)
     private lateinit var adapter: MainAdapter
     private var isOpenPickActivity = false
     private val mainViewModel: MainViewModel by viewModel()
 
     private val savePref: SavePref by inject()
-    lateinit var servicesGRV: GridView
+    private var buildTypeLabel by mutableStateOf<String?>(null)
+    private var showLogoutDialog by mutableStateOf(false)
+    private var showChangeLanguageDialog by mutableStateOf(false)
     lateinit var serviceList: List<GridViewModal>
 
     // Lifecycle
@@ -61,17 +63,52 @@ class MainActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         if (!requireAuthenticatedSession()) return
         // Initializes properties
-        mDialog = Utility.getProgressDialog(this)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
         // Call Methods
-        setupActionBar()
-        setupDrawer()
         observeLogOut()
         setGridView()
-        binding.navigationView.itemIconTintList = null;
 
         setBuildTypeInfo()
+
+        setContent {
+            MainScreen(
+                services = serviceList,
+                buildTypeLabel = buildTypeLabel,
+                onServiceClick = ::onServiceClick,
+                onDrawerItemClick = ::onDrawerItemSelected,
+            )
+
+            if (showLogoutDialog) {
+                LogoutDialog(
+                    title = getString(R.string.log_out),
+                    message = getString(R.string.alarm_log_out),
+                    cancelable = false,
+                    confirmText = getString(android.R.string.yes),
+                    onConfirm = {
+                        showLogoutDialog = false
+                        requestLogoutApi()
+                    },
+                    dismissText = getString(android.R.string.no),
+                    onDismiss = { showLogoutDialog = false },
+                )
+            }
+
+            if (showChangeLanguageDialog) {
+                ChangeLanguageDialog(
+                    title = getString(R.string.change_language),
+                    languages = LocaleManager.arrayLanguage.toList(),
+                    initialSelectedIndex = LocaleManager.getLocaleIndex(savePref.language) ?: 0,
+                    confirmText = getString(R.string.change),
+                    onConfirm = { selectIndex ->
+                        showChangeLanguageDialog = false
+                        changeLanguage(selectIndex)
+                    },
+                    dismissText = getString(android.R.string.cancel),
+                    onDismiss = { showChangeLanguageDialog = false },
+                )
+            }
+
+            if (showProgress) AppProgressDialog()
+        }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -86,22 +123,15 @@ class MainActivity : BaseActivity() {
 
     private fun setBuildTypeInfo() {
         when (BuildConfig.BUILD_TYPE) {
-            "debug" -> {
-                binding.tvBuildType.text = getString(R.string.demo)
-                binding.tvBuildType.visibility = View.VISIBLE
-            }
+            "debug" -> buildTypeLabel = getString(R.string.demo)
 
-            "stage" -> {
-                binding.tvBuildType.text = getString(R.string.stage)
-                binding.tvBuildType.visibility = View.VISIBLE
-            }
+            "stage" -> buildTypeLabel = getString(R.string.stage)
 
-            "release" -> binding.tvBuildType.visibility = View.GONE
+            "release" -> buildTypeLabel = null
         }
     }
 
     private fun setGridView() {
-        servicesGRV = findViewById(R.id.idGRV)
         serviceList = ArrayList()
         serviceList = serviceList + GridViewModal(getString(R.string.picking), R.drawable.pick)
         serviceList = serviceList + GridViewModal(getString(R.string.pack), R.drawable.pack)
@@ -109,93 +139,67 @@ class MainActivity : BaseActivity() {
             serviceList + GridViewModal(getString(R.string.put_away_menu), R.drawable.inventory)
         serviceList =
             serviceList + GridViewModal(getString(R.string.add_stock), R.drawable.add_stock)
+    }
 
-        val courseAdapter = GridRVAdapter(courseList = serviceList, this@MainActivity)
-        servicesGRV.adapter = courseAdapter
-        servicesGRV.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            when (serviceList[position].serviceName) {
-                getString(R.string.picking) -> {
-                    openPickActivity()
-                }
-
-                getString(R.string.pack) -> {
-                    openPackActivity()
-                }
-
-                getString(R.string.put_away_menu) -> {
-                    openPutAwayActivity()
-                }
-
-                getString(R.string.add_stock) -> {
-                    openAddStockActivity()
-                }
-
+    private fun onServiceClick(position: Int) {
+        when (serviceList[position].serviceName) {
+            getString(R.string.picking) -> {
+                openPickActivity()
             }
+
+            getString(R.string.pack) -> {
+                openPackActivity()
+            }
+
+            getString(R.string.put_away_menu) -> {
+                openPutAwayActivity()
+            }
+
+            getString(R.string.add_stock) -> {
+                openAddStockActivity()
+            }
+
         }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            android.R.id.home -> {
-                binding.drawerLayout.openDrawer(GravityCompat.START)
-                return true
-            }
-        }
-        return super.onOptionsItemSelected(item)
-    }
+    private fun onDrawerItemSelected(item: MainDrawerItem) {
+        when (item) {
+            MainDrawerItem.Home -> Unit
 
-    private fun setupActionBar() {
-        setSupportActionBar(binding.toolbar)
-        val actionbar = supportActionBar
-        actionbar?.setDisplayHomeAsUpEnabled(true)
-        actionbar?.setHomeAsUpIndicator(R.drawable.ic_menu)
-    }
+            MainDrawerItem.Profile -> openProfile()
 
-    @SuppressLint("SetTextI18n")
-    private fun setupDrawer() {
-        binding.navigationView.setNavigationItemSelectedListener {
-            binding.drawerLayout.closeDrawers()
-            when (it.itemId) {
-                R.id.nav_home -> {
+            MainDrawerItem.ChangeLanguage -> changeLanguageDialog()
 
-                    true
-                }
-
-                R.id.nav_profile -> {
-                    openProfile()
-                    true
-                }
-
-                R.id.nav_change_language -> {
-                    changeLanguageDialog()
-                    true
-                }
-
-                R.id.nav_logout -> {
-                    showLogoutUserAlert()
-                    true
-                }
-
-                else -> false
-            }
+            MainDrawerItem.Logout -> showLogoutUserAlert()
         }
     }
 
     private fun changeLanguageDialog() {
-        Utility.changeLanguageDialog(this)
+        showChangeLanguageDialog = true
+    }
+
+    // positive button of the old Utility.changeLanguageDialog
+    private fun changeLanguage(selectIndex: Int) {
+        val language = savePref.language
+        val selectedLanguage = LocaleManager.arrayFlag[selectIndex]
+
+        if (language != selectedLanguage) {
+            LocaleManager.setNewLocale(this, selectedLanguage)
+            startActivity(
+                Intent(this, MainActivity::class.java).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                                Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                                Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    )
+                }
+            )
+        }
     }
 
     @SuppressLint("UseCompatLoadingForDrawables")
     private fun showLogoutUserAlert() {
-        alert(getString(R.string.alarm_log_out)) {
-            title = getString(R.string.log_out)
-            isCancelable = false
-            positiveButton(getString(android.R.string.yes)) {
-                requestLogoutApi()
-
-            }
-            negativeButton(getString(android.R.string.no)) {}
-        }.show()
+        showLogoutDialog = true
     }
 
     private fun logoutUser() {
@@ -267,10 +271,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun handleLoading(loading: Boolean) {
-        if (loading)
-            mDialog.show()
-        else
-            mDialog.dismiss()
+        showProgress = loading
     }
 
 }

@@ -1,39 +1,48 @@
 package com.silkysys.warehouse.app.autentcation.forgetPasswordVerifyCode
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.silkysys.warehouse.app.error_handle.ErrorHandler
 import com.silkysys.warehouse.app.autentcation.forgetPassword.ForgotPasswordActivity
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
-import com.silkysys.warehouse.app.ui.utility.Utility
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
 import com.silkysys.warehouse.sharedcode.data.autentcation.forgetPasswordVerifyCode.dto.VerifyCodeRequest
 import com.silkysys.warehouse.sharedcode.data.autentcation.forgetPasswordVerifyCode.dto.VerifyCodeResponse
 import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
-import com.silkysys.warehouse.databinding.ActivityForgetPasswordSendCodeBinding
 import com.silkysys.warehouse.sharedcode.domain.autentcation.forgetPasswordVerifyCode.entity.VerifyCodeEntity
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
+import com.silkysys.warehouse.app.ui.compose_ui.VerifyCodeScreen
 
 
 class VerifyCodeActivity : BaseActivity() {
-    private lateinit var binding: ActivityForgetPasswordSendCodeBinding
     private val forgetPasswordViewModel: VerifyCodeViewModel by viewModel()
     private lateinit var email: String
     private lateinit var code: String
-    private lateinit var mDialog: AlertDialog
+    private var codeInput by mutableStateOf("")
+    private var showProgress by mutableStateOf(false)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding= ActivityForgetPasswordSendCodeBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        mDialog = Utility.getProgressDialog(this)
         email = intent.getStringExtra("email").toString()
-        setClicks()
+        setContent {
+            VerifyCodeScreen(
+                code = codeInput,
+                onCodeChange = { codeInput = it },
+                onVerify = { verifyCode() },
+                onBack = { finish() },
+            )
+
+            if (showProgress) AppProgressDialog()
+        }
         observeVerifyCode()
 
     }
@@ -62,10 +71,7 @@ class VerifyCodeActivity : BaseActivity() {
     }
 
     private fun setLoading(loading: Boolean) {
-        if (loading)
-            mDialog.show()
-        else
-            mDialog.dismiss()
+        showProgress = loading
     }
 
     private fun errorVerify(verifyCodeResponse: WrappedResponse<VerifyCodeResponse>) {
@@ -79,14 +85,9 @@ class VerifyCodeActivity : BaseActivity() {
         startActivity(intent)
     }
 
-    private fun setClicks() {
-        binding.ivBackarrow.setOnClickListener {
-            finish()
-        }
-        binding.btSendCode.setOnClickListener {
-            code= binding.etCode.text.toString().trim()
-            if (code.isNotEmpty())
-                forgetPasswordViewModel.verifyCode(VerifyCodeRequest(email,code))
-        }
+    private fun verifyCode() {
+        code= codeInput.trim()
+        if (code.isNotEmpty())
+            forgetPasswordViewModel.verifyCode(VerifyCodeRequest(email,code))
     }
 }

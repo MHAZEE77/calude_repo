@@ -7,7 +7,6 @@ import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.error_handle.AuthEvent
 import com.silkysys.warehouse.app.error_handle.InterceptorHandledException
 import com.silkysys.warehouse.app.ui.utility.SavePref
-import com.silkysys.warehouse.app.ui.utility.Utility.generateIdempotencyKey
 import com.silkysys.warehouse.sharedcode.data.remote.ApiService
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp

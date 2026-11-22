@@ -1,29 +1,28 @@
 package com.silkysys.warehouse.app.packing.packDetails.activity
 
-import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.error_handle.ErrorHandler
 import com.silkysys.warehouse.app.packing.addPack.activity.AddPackActivity
 import com.silkysys.warehouse.app.packing.packDetails.FinishStatus
 import com.silkysys.warehouse.app.packing.packDetails.PackDetailsViewModel
 import com.silkysys.warehouse.app.packing.packDetails.PackStatus
-import com.silkysys.warehouse.app.packing.packDetails.adapter.PackDetailsAdapter
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppAlertDialog
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
+import com.silkysys.warehouse.app.ui.compose_ui.packdetails.PackDetailsScreen
 import com.silkysys.warehouse.app.ui.utility.SavePref
-import com.silkysys.warehouse.app.ui.utility.Utility
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
-import com.silkysys.warehouse.databinding.ActivityPackDetailsBinding
 import com.silkysys.warehouse.sharedcode.domain.packing.finishPack.entity.FinishPackEntity
 import com.silkysys.warehouse.sharedcode.domain.packing.packDetails.entity.PackDetailsEntity
-import com.silkysys.warehouse.wms.app.ui.utility.alert
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.android.ext.android.inject
@@ -32,21 +31,47 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class PackDetailsActivity : BaseActivity() {
 
     private val  savePref: SavePref by inject()
-    private lateinit var mDialog: AlertDialog
+    private var showProgress by mutableStateOf(false)
     private val packDetailsViewModel: PackDetailsViewModel by viewModel()
-    private lateinit var binding: ActivityPackDetailsBinding
+    private var packName by mutableStateOf<String?>(null)
+    private var packListItems by mutableStateOf<List<PackDetailsEntity.PackList>>(emptyList())
+    private var isEmptyVisible by mutableStateOf(false)
+    private var canPack by mutableStateOf(true)
+    private var showFinishDialog by mutableStateOf(false)
     private var packID:Int = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!requireAuthenticatedSession()) return
-        binding= ActivityPackDetailsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-         mDialog = Utility.getProgressDialog(this)
-        binding.tvDetailsItem.text= intent.getStringExtra("packName")
+        packName = intent.getStringExtra("packName")
+        setContent {
+            PackDetailsScreen(
+                packName = packName,
+                packListItems = packListItems,
+                isEmptyVisible = isEmptyVisible,
+                canPack = canPack,
+                onBack = { finish() },
+                onAddPack = { onAddPackClick() },
+                onFinish = { onFinishClick() },
+            )
+
+            if (showFinishDialog) {
+                AppAlertDialog(
+                    message = getString(R.string.finish_pack_confirmation_message),
+                    confirmText = getString(R.string.ok),
+                    onConfirm = {
+                        showFinishDialog = false
+                        packDetailsViewModel.finishPack(savePref.companyId,packID)
+                    },
+                    dismissText = getString(R.string.cancel),
+                    onDismiss = { showFinishDialog = false },
+                )
+            }
+
+            if (showProgress) AppProgressDialog()
+        }
         packID= intent.getIntExtra("packID",0)
         observePackDetails()
         observeFinisPack()
-        setOnClicks()
     }
 
     private fun observeFinisPack() {
@@ -78,28 +103,16 @@ class PackDetailsActivity : BaseActivity() {
     private fun handleSuccessFinish(finishPackEntity: FinishPackEntity) {
         finish()
     }
-    @SuppressLint("SuspiciousIndentation")
-    private fun setOnClicks() {
-        binding.ivBack.setOnClickListener {
-            finish()
-        }
-        //to add pack Item
-        binding.civAddPack.setOnClickListener {
+    //to add pack Item
+    private fun onAddPackClick() {
         val intent= Intent(this,AddPackActivity::class.java)
-            intent.putExtra("packID",packID)
-            startActivity(intent)
-        }
-        // to finish this pack list
-        binding.btFinish.setOnClickListener {
-            val confirmDialog= AlertDialog.Builder(this)
-            alert {
-                message = getString(R.string.finish_pack_confirmation_message)
-                positiveButton(getString(R.string.ok)) {
-                    packDetailsViewModel.finishPack(savePref.companyId,packID)
-                }
-                negativeButton(getString(R.string.cancel)) { }
-            }.show()
-        }
+        intent.putExtra("packID",packID)
+        startActivity(intent)
+    }
+
+    // to finish this pack list
+    private fun onFinishClick() {
+        showFinishDialog = true
     }
 
     private fun observePackDetails() {
@@ -109,7 +122,7 @@ class PackDetailsActivity : BaseActivity() {
     }
 
     private fun handlePackDetailsStatus(detailsStatus: PackStatus){
-         when(detailsStatus){
+        when(detailsStatus){
             is PackStatus.Init -> Unit
             is PackStatus.SuccessPackDetails -> handleSuccessGetDetails(detailsStatus.packDetailsEntity)
             is PackStatus.ErrorPackDetails -> showErrorAlert(detailsStatus.packDetailsResponse.message)
@@ -123,26 +136,15 @@ class PackDetailsActivity : BaseActivity() {
         }
     }
     private fun handleLoading(loading: Boolean) {
-        if (loading)
-            mDialog.show()
-        else
-            mDialog.dismiss()
+        showProgress = loading
     }
     private fun handleSuccessGetDetails(packDetailsEntity: PackDetailsEntity) {
-        if (packDetailsEntity.canPack) {
-            binding.civAddPack.visibility = View.VISIBLE
-            binding.btFinish.visibility = View.GONE
-        } else {
-            binding.civAddPack.visibility = View.GONE
-            binding.btFinish.visibility = View.VISIBLE
-        }
+        canPack = packDetailsEntity.canPack
         if (packDetailsEntity.packListItems.isNotEmpty()) {
-            val adapter = PackDetailsAdapter(packDetailsEntity.packListItems)
-            binding.rvPackDetailsRecycler.layoutManager = LinearLayoutManager(this)
-            binding.rvPackDetailsRecycler.adapter = adapter
+            packListItems = packDetailsEntity.packListItems
+            isEmptyVisible = false
         }else{
-            binding.rvPackDetailsRecycler.visibility= View.GONE
-            binding.linEmptyContainer.visibility = View.VISIBLE
+            isEmptyVisible = true
         }
     }
 

@@ -1,10 +1,8 @@
 package com.silkysys.warehouse.app.autentcation.login
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
-import android.view.inputmethod.EditorInfo
-import androidx.core.widget.doAfterTextChanged
+import androidx.activity.compose.setContent
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -13,10 +11,11 @@ import com.silkysys.warehouse.app.error_handle.ErrorHandler
 import com.silkysys.warehouse.app.autentcation.forgetPasswordSendEmail.SendEmailActivity
 import com.silkysys.warehouse.app.autentcation.main.activity.MainActivity
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
+import com.silkysys.warehouse.app.ui.compose_ui.LoginField
+import com.silkysys.warehouse.app.ui.compose_ui.LoginFormState
+import com.silkysys.warehouse.app.ui.compose_ui.LoginScreen
 import com.silkysys.warehouse.app.ui.utility.SavePref
-import com.silkysys.warehouse.app.ui.utility.Utility
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
-import com.silkysys.warehouse.databinding.ActivityLoginBinding
 import com.silkysys.warehouse.sharedcode.data.autentcation.login.dto.request.LoginRequest
 import com.silkysys.warehouse.sharedcode.data.autentcation.login.dto.response.LoginResponse
 import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
@@ -25,11 +24,15 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
 
 class LoginActivity : BaseActivity() {
 
-    private lateinit var binding: ActivityLoginBinding
-    private lateinit var progressDialog: AlertDialog
+    private val form = LoginFormState()
+    private var showProgress by mutableStateOf(false)
     private val loginViewModel: LoginViewModel by viewModel()
     private val savePref: SavePref by inject()
     private var pendingEmail = ""
@@ -42,46 +45,39 @@ class LoginActivity : BaseActivity() {
             return
         }
 
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        progressDialog = Utility.getProgressDialog(this)
 
-        binding.usernameEditText.setText(savePref.rememberedEmail)
-        binding.cbRemeberMe.isChecked = savePref.rememberEmail && savePref.rememberedEmail.isNotBlank()
-        binding.usernameEditText.setSelection(binding.usernameEditText.text?.length ?: 0)
+        form.email = savedInstanceState?.getString(STATE_EMAIL) ?: savePref.rememberedEmail
+        form.rememberMe = savedInstanceState?.getBoolean(STATE_REMEMBER_ME)
+            ?: (savePref.rememberEmail && savePref.rememberedEmail.isNotBlank())
 
-        binding.signInButton.setOnClickListener { onSignInButtonPressed() }
-        binding.tvForgotPassword.setOnClickListener {
-            loginViewModel.clearStatus()
-            startActivity(Intent(this, SendEmailActivity::class.java))
+        setContent {
+            LoginScreen(
+                form = form,
+                onSignIn = ::onSignInButtonPressed,
+                onForgotPassword = {
+                    loginViewModel.clearStatus()
+                    startActivity(Intent(this, SendEmailActivity::class.java))
+                },
+            )
+
+            if (showProgress) AppProgressDialog()
         }
-
-        binding.passwordEditText.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                onSignInButtonPressed()
-                true
-            } else {
-                false
-            }
-        }
-
-        binding.usernameEditText.doAfterTextChanged { binding.usernameEditText.error = null }
-        binding.passwordEditText.doAfterTextChanged { binding.passwordEditText.error = null }
 
         observeLogin()
     }
 
-    override fun onDestroy() {
-        if (::progressDialog.isInitialized && progressDialog.isShowing) progressDialog.dismiss()
-        super.onDestroy()
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_EMAIL, form.email)
+        outState.putBoolean(STATE_REMEMBER_ME, form.rememberMe)
     }
 
     private fun onSignInButtonPressed() {
         if (!isValidInput()) return
 
-        pendingEmail = binding.usernameEditText.text.toString().trim()
-        val password = binding.passwordEditText.text.toString()
-        binding.signInButton.isEnabled = false
+        pendingEmail = form.email.trim()
+        val password = form.password
+        form.isSignInEnabled = false
 
         loginViewModel.login(
             LoginRequest(
@@ -131,9 +127,9 @@ class LoginActivity : BaseActivity() {
         savePref.authorization = loginEntity.token
         savePref.refreshToken = loginEntity.refreshToken
         savePref.clientId = loginEntity.clientId
-        savePref.rememberEmail = binding.cbRemeberMe.isChecked
-        savePref.rememberedEmail = if (binding.cbRemeberMe.isChecked) pendingEmail else ""
-        binding.passwordEditText.text?.clear()
+        savePref.rememberEmail = form.rememberMe
+        savePref.rememberedEmail = if (form.rememberMe) pendingEmail else ""
+        form.password = ""
         startHomeActivity()
     }
 
@@ -143,12 +139,8 @@ class LoginActivity : BaseActivity() {
     }
 
     private fun handleLoading(loading: Boolean) {
-        binding.signInButton.isEnabled = !loading
-        if (loading && !isFinishing) {
-            progressDialog.show()
-        } else if (progressDialog.isShowing) {
-            progressDialog.dismiss()
-        }
+        form.isSignInEnabled = !loading
+        showProgress = loading && !isFinishing
     }
 
     private fun startHomeActivity() {
@@ -161,23 +153,28 @@ class LoginActivity : BaseActivity() {
     }
 
     private fun isValidInput(): Boolean {
-        val email = binding.usernameEditText.text.toString().trim()
-        val password = binding.passwordEditText.text.toString()
+        val email = form.email.trim()
+        val password = form.password
         if (ValidateLogin.validateEmail(email)) {
-            binding.usernameEditText.error = getString(R.string.username_empty_error)
-            binding.usernameEditText.requestFocus()
+            form.emailError = getString(R.string.username_empty_error)
+            form.focusRequest = LoginField.Email
             return false
         }
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            binding.usernameEditText.error = getString(R.string.enter_valid_email)
-            binding.usernameEditText.requestFocus()
+            form.emailError = getString(R.string.enter_valid_email)
+            form.focusRequest = LoginField.Email
             return false
         }
         if (ValidateLogin.validatePassword(password)) {
-            binding.passwordEditText.error = getString(R.string.password_empty_error)
-            binding.passwordEditText.requestFocus()
+            form.passwordError = getString(R.string.password_empty_error)
+            form.focusRequest = LoginField.Password
             return false
         }
         return true
+    }
+
+    private companion object {
+        const val STATE_EMAIL = "state_email"
+        const val STATE_REMEMBER_ME = "state_remember_me"
     }
 }

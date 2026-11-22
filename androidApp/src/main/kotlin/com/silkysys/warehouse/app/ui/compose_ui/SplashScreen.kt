@@ -22,11 +22,6 @@ private val TextWidth = 180.dp
 private val TextHeight = 26.756756.dp
 private val LogoTextSpacing = 30.dp
 
-/**
- * Compose replacement for the old `activity_launcher.xml`.
- * The logo is centred on screen and the wordmark hangs below it, exactly like the
- * previous RelativeLayout (so the logo does not shift when the text is added).
- */
 @Composable
 fun SplashScreen(modifier: Modifier = Modifier) {
     // Old shape: android:angle="270" (top -> bottom), startColor = gradient_end, endColor = gradient_start

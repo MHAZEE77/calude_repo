@@ -1,9 +1,12 @@
 package com.silkysys.warehouse.app.autentcation.forgetPasswordSendEmail
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -11,10 +14,9 @@ import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.error_handle.ErrorHandler
 import com.silkysys.warehouse.app.autentcation.forgetPasswordVerifyCode.VerifyCodeActivity
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
-import com.silkysys.warehouse.app.ui.utility.Utility
+import com.silkysys.warehouse.app.ui.compose_ui.SendEmailScreen
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
 import com.silkysys.warehouse.app.ui.utility.extension.showSuccessAlert
-import com.silkysys.warehouse.databinding.ActivityForgetPasswordSendEmailBinding
 import com.silkysys.warehouse.sharedcode.data.autentcation.sendemail.dto.SendEmailRequest
 import com.silkysys.warehouse.sharedcode.data.autentcation.sendemail.dto.SendEmailResponse
 import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
@@ -22,36 +24,36 @@ import com.silkysys.warehouse.sharedcode.domain.autentcation.sendemail.entity.Se
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
 
 class SendEmailActivity : BaseActivity() {
-    private lateinit var binding: ActivityForgetPasswordSendEmailBinding
     private val sendEmailViewmodel: SendEmailViewmodel by viewModel()
 
-    private lateinit var mDialog: AlertDialog
+    private var showProgress by mutableStateOf(false)
     private lateinit var email: String
+    private var emailInput by mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityForgetPasswordSendEmailBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        mDialog = Utility.getProgressDialog(this)
-        setClicks()
-        observeUpdatePassword()
+        setContent {
+            SendEmailScreen(
+                email = emailInput,
+                onEmailChange = { emailInput = it },
+                onSend = { sendEmail() },
+                onBack = { finish() },
+            )
 
-        binding.ivBackarrow.setOnClickListener {
-            finish()
+            if (showProgress) AppProgressDialog()
         }
+        observeUpdatePassword()
     }
 
-    private fun setClicks() {
-        binding.btSendEmail.setOnClickListener {
-            email = binding.etEmail.text.toString()
-            if (email.trim().isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches())
-                sendEmailViewmodel.updatePassword(SendEmailRequest(email))
-            else
-                showErrorAlert(getString(R.string.enter_valid_email))
-        }
-
+    private fun sendEmail() {
+        email = emailInput
+        if (email.trim().isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches())
+            sendEmailViewmodel.updatePassword(SendEmailRequest(email))
+        else
+            showErrorAlert(getString(R.string.enter_valid_email))
     }
 
     private fun handleUpdatePassword(updateState: UpdatePasswordStatus) {
@@ -71,7 +73,7 @@ class SendEmailActivity : BaseActivity() {
         setLoading(false)
         showSuccessAlert(entity.message) {
             val intent = Intent(this, VerifyCodeActivity::class.java)
-            intent.putExtra("email",binding.etEmail.text.toString())
+            intent.putExtra("email",emailInput)
             startActivity(intent)
             finish()
         }
@@ -83,10 +85,7 @@ class SendEmailActivity : BaseActivity() {
     }
 
     private fun setLoading(loading: Boolean) {
-        if (loading)
-            mDialog.show()
-        else
-            mDialog.dismiss()
+        showProgress = loading
     }
 
     private fun observeUpdatePassword() {

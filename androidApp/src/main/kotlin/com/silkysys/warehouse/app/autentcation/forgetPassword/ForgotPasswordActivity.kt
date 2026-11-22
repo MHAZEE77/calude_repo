@@ -4,34 +4,36 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.error_handle.ErrorHandler
 import com.silkysys.warehouse.app.autentcation.login.LoginActivity
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
-import com.silkysys.warehouse.app.ui.utility.SavePref
-import com.silkysys.warehouse.app.ui.utility.Utility
 import com.silkysys.warehouse.app.ui.utility.extension.hideKeyboard
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
 import com.silkysys.warehouse.app.ui.utility.extension.showSuccessAlert
-import com.silkysys.warehouse.databinding.ActivityForgotPasswordBinding
 import com.silkysys.warehouse.sharedcode.data.autentcation.updateForgetPassword.dto.UpdateForgetPasswordRequest
 import com.silkysys.warehouse.sharedcode.data.autentcation.updateForgetPassword.dto.UpdateForgetPasswordResponse
 import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
 import com.silkysys.warehouse.sharedcode.domain.autentcation.updateForgetPassword.entity.UpdateForgetPasswordEntity
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
+import com.silkysys.warehouse.app.ui.compose_ui.ForgotPasswordScreen
 
 
 class ForgotPasswordActivity : BaseActivity() {
-    private lateinit var binding: ActivityForgotPasswordBinding
-    private lateinit var mDialog: AlertDialog
+    private var showProgress by mutableStateOf(false)
     private lateinit var userEmail: String
     private lateinit var resetToken: String
+    private var passwordInput by mutableStateOf("")
+    private var confirmPasswordInput by mutableStateOf("")
 
     private val forgetPasswordViewModel: ForgetPasswordViewModel by viewModel()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,35 +57,39 @@ class ForgotPasswordActivity : BaseActivity() {
             return
         }
 
-        binding = ActivityForgotPasswordBinding.inflate(layoutInflater)
-        mDialog = Utility.getProgressDialog(this)
-        setContentView(binding.root)
+        setContent {
+            ForgotPasswordScreen(
+                password = passwordInput,
+                onPasswordChange = { passwordInput = it },
+                confirmPassword = confirmPasswordInput,
+                onConfirmPasswordChange = { confirmPasswordInput = it },
+                onCreate = { onCreateClick() },
+                onBack = {
+                    val intent = Intent(this, LoginActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                },
+            )
+
+            if (showProgress) AppProgressDialog()
+        }
         hideKeyboard()
-        setupClickListener()
         observeUpdatePassword()
     }
 
-    private fun setupClickListener() {
-        binding.ivBackarrow.setOnClickListener {
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-
-        binding.createButton.setOnClickListener {
-            val errors = validatePassword()
-            if (errors.isEmpty()) {
-                requestCreateNewPasswordApi()
-            } else {
-                showPasswordErrorDialog(this, errors)
-            }
+    private fun onCreateClick() {
+        val errors = validatePassword()
+        if (errors.isEmpty()) {
+            requestCreateNewPasswordApi()
+        } else {
+            showPasswordErrorDialog(this, errors)
         }
     }
 
     fun validatePassword(): List<String> {
 
-        val password = binding.password.text.toString()
-        val confirmPassword = binding.confirmPassword.text.toString()
+        val password = passwordInput
+        val confirmPassword = confirmPasswordInput
         val errors = mutableListOf<String>()
 
         if (password != confirmPassword){
@@ -127,10 +133,7 @@ class ForgotPasswordActivity : BaseActivity() {
     }
 
     private fun handleLoading(loading: Boolean) {
-        if (loading)
-            mDialog.show()
-        else
-            mDialog.dismiss()
+        showProgress = loading
     }
 
     private fun handleErrorUpdate(updateForgetPasswordResponse: WrappedResponse<UpdateForgetPasswordResponse>) {
@@ -145,8 +148,8 @@ class ForgotPasswordActivity : BaseActivity() {
     }
 
     private fun requestCreateNewPasswordApi() {
-        val passwordText = binding.password.text.toString()
-        val confirmPasswordText = binding.confirmPassword.text.toString()
+        val passwordText = passwordInput
+        val confirmPasswordText = confirmPasswordInput
         forgetPasswordViewModel.updatePassword(
             UpdateForgetPasswordRequest(userEmail, passwordText, confirmPasswordText, resetToken)
         )
