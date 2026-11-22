@@ -54,6 +54,7 @@ googleServices = "4.4.2"
 firebaseCrashlytics = "1.29.0"
 realm = "10.19.0"
 ksp = "2.0.21-1.0.27"
+fragmentCompose = "1.8.5"
 
 [libraries]
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCamera2Version" }
@@ -128,6 +129,7 @@ koin-androidxCompose = { module = "io.insert-koin:koin-androidx-compose", versio
 multiplatformSettings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+androidx-fragment-compose = { group = "androidx.fragment", name = "fragment-compose", version.ref = "fragmentCompose" }
 
 
 [plugins]

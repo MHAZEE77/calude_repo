@@ -56,6 +56,7 @@ kotlin {
 
 dependencies {
     implementation(project(":sharedLogic"))
+    implementation(libs.androidx.fragment.compose)
     implementation(projects.sharedUI)
 
     implementation(libs.androidx.activity.compose)
