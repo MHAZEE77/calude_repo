@@ -1,5 +1,6 @@
-package com.silkysys.warehouse.wms.app.ui.utility
+package com.silkysys.warehouse.app.ui.utility
 
+import android.R
 import android.app.AlertDialog
 import android.content.Context
 import android.view.View
@@ -26,7 +27,7 @@ class CustomAlertDialog(private val context: Context) {
     var title: String = ""
     var message: String = ""
     var isCancelable: Boolean = true
-    private var positiveButtonText: String = context.getString(android.R.string.ok)
+    private var positiveButtonText: String = context.getString(R.string.ok)
     private var negativeButtonText: String? = null
     private var positiveAction: (() -> Unit)? = null
     private var negativeAction: (() -> Unit)? = null
@@ -61,24 +62,24 @@ class CustomAlertDialog(private val context: Context) {
     }
 
     // Button configurations
-    fun positiveButton(text: String = context.getString(android.R.string.ok), action: () -> Unit = {}): CustomAlertDialog {
+    fun positiveButton(text: String = context.getString(R.string.ok), action: () -> Unit = {}): CustomAlertDialog {
         this.positiveButtonText = text
         this.positiveAction = action
         return this
     }
 
-    fun negativeButton(text: String = context.getString(android.R.string.cancel), action: () -> Unit = {}): CustomAlertDialog {
+    fun negativeButton(text: String = context.getString(R.string.cancel), action: () -> Unit = {}): CustomAlertDialog {
         this.negativeButtonText = text
         this.negativeAction = action
         return this
     }
 
     fun yesButton(action: () -> Unit = {}): CustomAlertDialog {
-        return positiveButton(context.getString(android.R.string.yes), action)
+        return positiveButton(context.getString(R.string.yes), action)
     }
 
     fun noButton(action: () -> Unit = {}): CustomAlertDialog {
-        return negativeButton(context.getString(android.R.string.no), action)
+        return negativeButton(context.getString(R.string.no), action)
     }
 
     // Custom view

@@ -4,7 +4,6 @@ package com.silkysys.warehouse.app.picking.startPick.activity
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlertDialog
-import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
@@ -12,24 +11,16 @@ import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
+import androidx.activity.addCallback
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import coil.load
-import coil.size.Scale
-import com.google.android.material.textfield.TextInputLayout
 import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.error_handle.ErrorHandler
 import com.silkysys.warehouse.app.picking.pick.activity.PickActivity
@@ -38,21 +29,20 @@ import com.silkysys.warehouse.app.picking.startPick.GetStartedListStatus
 import com.silkysys.warehouse.app.picking.startPick.QuantityStatus
 import com.silkysys.warehouse.app.picking.startPick.StartPickViewModel
 import com.silkysys.warehouse.app.picking.startPick.StartStatus
-import com.silkysys.warehouse.app.picking.startPick.adapter.PickItemsAdapter
 import com.silkysys.warehouse.app.security.BarcodeInputValidator
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
+import com.silkysys.warehouse.app.ui.compose_ui.pick.PickItemsScreen
+import com.silkysys.warehouse.app.ui.compose_ui.pick_items.PickQuantityDialog
 import com.silkysys.warehouse.app.ui.utility.BarcodeScanningActivity
 import com.silkysys.warehouse.app.ui.utility.SavePref
 import com.silkysys.warehouse.app.ui.utility.Utility
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
 import com.silkysys.warehouse.data.picking.startPickUpdateDialogQuantity.dto.UpdateQuantityRequest
-import com.silkysys.warehouse.databinding.ActivityPickItemsBinding
 import com.silkysys.warehouse.sharedcode.domain.picking.pick.entity.PickEntity
 import com.silkysys.warehouse.sharedcode.domain.picking.startPick.entity.StartPickEntity
 import com.silkysys.warehouse.sharedcode.domain.picking.startPickUpdateDialogQuantity.entity.UpdateDialogQuantityEntity
 import com.silkysys.warehouse.sharedcode.domain.picking.startPickUpdateQuantity.entity.UpdateQuantityEntity
-import com.silkysys.warehouse.wms.app.ui.utility.ToastHelper.toast
-import com.silkysys.warehouse.wms.app.ui.utility.alert
+import com.silkysys.warehouse.app.ui.utility.ToastHelper.toast
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.android.ext.android.inject
@@ -62,17 +52,20 @@ class PickItemsActivity : BaseActivity() {
 
     // Properties
     private var isFirstTimeLoading = true
-    private lateinit var mOnClickListener: View.OnClickListener
     private lateinit var startedItemsEntity: StartPickEntity
 
     private val savePref: SavePref by inject()          // koin inject
-    private lateinit var binding: ActivityPickItemsBinding
     private lateinit var mDialog: AlertDialog
-    private lateinit var adapter: PickItemsAdapter
     private lateinit var pickOrder: PickEntity.Fulfillments.Started
     private val startPickViewModel: StartPickViewModel by viewModel()
-    private lateinit var rootDialog: Dialog
     private lateinit var mediaPlayer: MediaPlayer
+
+    // Compose UI state
+    private var screenTitle by mutableStateOf("")
+    private var showStart by mutableStateOf(false)
+    private var items by mutableStateOf<List<StartPickEntity.Fulfillment.Item>>(emptyList())
+    private var selectedItem by mutableStateOf<StartPickEntity.Fulfillment.Item?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!requireAuthenticatedSession()) return
@@ -81,28 +74,40 @@ class PickItemsActivity : BaseActivity() {
             return
         }
         mDialog = Utility.getProgressDialog(this)
-        binding = ActivityPickItemsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
+        val isPicking = pickOrder.status == "picking"
+        screenTitle = if (isPicking) pickOrder.name else getString(R.string.picking)
+        showStart = !isPicking
+
+        setContent {
+            PickItemsScreen(
+                title = screenTitle,
+                items = items,
+                showStart = showStart,
+                onBackClick = ::openPickScreen,
+                onScanClick = ::openBarcodeScanner,
+                onStartClick = { startPickViewModel.startPick(savePref.companyId, pickOrder.id) },
+                onItemClick = ::onItemClick,
+            )
+            selectedItem?.let { item ->
+                PickQuantityDialog(
+                    orderName = pickOrder.name,
+                    item = item,
+                    onDismiss = { selectedItem = null },
+                    onSubmit = { quantity, hasIssue, note -> submitQuantity(item, quantity, hasIssue, note) },
+                )
+            }
+        }
+
+        onBackPressedDispatcher.addCallback(this) { openPickScreen() }
         // Call Methods
-        setupRecyclerView()
-        setupClickListeners()
         observeStartPick()
         observeGetStartedList()
         observeUpdate()
         observeDialogUpdate()
-        if (pickOrder.status == "picking") {
-            binding.startPickOrderContainer.visibility = View.GONE
-            binding.recyclerView.visibility = View.VISIBLE
-            binding.tvName.text = pickOrder.name
+        if (isPicking) {
             startPickViewModel.getStartedListStarted(savePref.companyId, pickOrder.id)
-        } else {
-            binding.tvName.text = getString(R.string.picking)
-            binding.startPickOrderContainer.visibility = View.VISIBLE
-            binding.recyclerView.visibility = View.GONE
         }
-        // Bind ViewModel
-//        bindViewModel()
     }
 
     private fun observeGetStartedList() {
@@ -137,12 +142,7 @@ class PickItemsActivity : BaseActivity() {
 
     private fun successGetStartedList(startedItemsEntity: StartPickEntity) {
         this.startedItemsEntity = startedItemsEntity
-        adapter = PickItemsAdapter(startedItemsEntity.fulfillment.items, mOnClickListener)
-        binding.recyclerView.apply {
-            val linearLayoutManager = LinearLayoutManager(context)
-            layoutManager = linearLayoutManager
-            adapter = this@PickItemsActivity.adapter
-        }
+        items = startedItemsEntity.fulfillment.items.toList()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -155,114 +155,31 @@ class PickItemsActivity : BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun setupRecyclerView() {
-        mOnClickListener = View.OnClickListener { view ->
-            val item = view.tag as StartPickEntity.Fulfillment.Item
-//                ItemsDetailsActivity.startActivity(this, pickOrder, item)
-            if (item.status != "picked") {
-                rootDialog = Dialog(this)
-                rootDialog.setContentView(R.layout.pick_pop_up)
-                val itemImage = rootDialog.findViewById<ImageView>(R.id.imageView)
-                val increase = rootDialog.findViewById<ImageView>(R.id.iv_increase)
-                val decrease = rootDialog.findViewById<ImageView>(R.id.iv_decrease)
-                val quantity = rootDialog.findViewById<TextView>(R.id.tv_quantity)
-                val name = rootDialog.findViewById<TextView>(R.id.nameTextView)
-                val title = rootDialog.findViewById<TextView>(R.id.tv_pickPopTitle)
-                val subtitle = rootDialog.findViewById<TextView>(R.id.subtitleTextView)
-                val remain = rootDialog.findViewById<TextView>(R.id.remainTextView)
-                val picked = rootDialog.findViewById<TextView>(R.id.pickedTextView)
-                val status = rootDialog.findViewById<TextView>(R.id.statusCardView)
-                val note = rootDialog.findViewById<EditText>(R.id.et_note)
-                val noteLayout = rootDialog.findViewById<TextInputLayout>(R.id.usernameEditText)
-                val issueCB = rootDialog.findViewById<CheckBox>(R.id.cb_issue)
-                val submitQuantity = rootDialog.findViewById<Button>(R.id.bt_submitQuantity)
-                title.text = pickOrder.name
-                name.text = item.name
-                subtitle.text = item.description ?: "Item description"
-                remain.text = (item.quantity - item.picked_quantity).toString()
-                picked.text = item.picked_quantity.toString()
-                status.text = item.status
-                increase.setOnClickListener {
-                    when {
-                        quantity.text.toString().toInt() == remain.text.toString().toInt() -> {
-
-                        }
-
-                        else -> quantity.text = (quantity.text.toString().toInt() + 1).toString()
-                    }
-                }
-                decrease.setOnClickListener {
-                    when {
-                        quantity.text.toString().toInt() > 1 -> quantity.text =
-                            (quantity.text.toString().toInt() - 1).toString()
-                    }
-                }
-                issueCB.setOnCheckedChangeListener { _, b ->
-                    if (b)
-                        noteLayout.visibility = View.VISIBLE
-                    else
-                        noteLayout.visibility = View.GONE
-                }
-                submitQuantity.setOnClickListener {
-                    when {
-                        issueCB.isChecked -> {
-                            startPickViewModel.updateDialogQuantity(
-                                savePref.companyId, pickOrder.id,
-                                UpdateQuantityRequest(
-                                    item.id,
-                                    item.quantity,
-                                    item.picked_quantity + quantity.text.toString().toInt(),
-                                    true,
-                                    note.text.toString()
-                                )
-                            )
-                        }
-
-                        else -> {
-                            startPickViewModel.updateDialogQuantity(
-                                savePref.companyId, pickOrder.id,
-                                UpdateQuantityRequest(
-                                    item.id, item.quantity,
-                                    item.picked_quantity + quantity.text.toString().toInt(),
-                                    false, ""
-                                )
-                            )
-                        }
-                    }
-                }
-
-                itemImage.load(item.image) {
-                    scale(Scale.FIT)
-                    placeholder(R.drawable.image_placeholder)
-                    error(R.drawable.image_placeholder)
-                }
-
-                rootDialog.window?.setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                rootDialog.window?.attributes?.windowAnimations = R.style.animation
-                rootDialog.show()
-            } else {
-                toast(getString(R.string.item_picked))
-//                showSuccessAlert(getString(R.string.item_picked))
-            }
+    private fun onItemClick(item: StartPickEntity.Fulfillment.Item) {
+        if (item.status != "picked") {
+            selectedItem = item
+        } else {
+            toast(getString(R.string.item_picked))
         }
-
-        binding.searchEditText.editText?.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-            }
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                adapter.filter(s.toString())
-            }
-
-            override fun afterTextChanged(s: Editable?) {
-                adapter.filter(s.toString())
-            }
-        })
     }
 
+    private fun submitQuantity(
+        item: StartPickEntity.Fulfillment.Item,
+        quantity: Int,
+        hasIssue: Boolean,
+        note: String,
+    ) {
+        startPickViewModel.updateDialogQuantity(
+            savePref.companyId, pickOrder.id,
+            UpdateQuantityRequest(
+                item.id,
+                item.quantity,
+                item.picked_quantity + quantity,
+                hasIssue,
+                if (hasIssue) note else ""
+            )
+        )
+    }
 
     private fun setScannedBarcode(rawValue: String) {
         startPickViewModel.updateQuantity(savePref.companyId, pickOrder.id, rawValue)
@@ -299,7 +216,7 @@ class PickItemsActivity : BaseActivity() {
     }
 
     private fun handleSuccessDialogUpdate(updateQuantityEntity: UpdateDialogQuantityEntity) {
-        rootDialog.dismiss()
+        selectedItem = null
         startPickViewModel.getStartedListStarted(savePref.companyId, pickOrder.id)
     }
 
@@ -342,34 +259,10 @@ class PickItemsActivity : BaseActivity() {
             mDialog.dismiss()
     }
 
-    private fun setupClickListeners() {
-        binding.civScan.setOnClickListener {
-            openBarcodeScanner()
-        }
-        binding.ivBack.setOnClickListener {
-            val intent = Intent(this, PickActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-        binding.finishButton.setOnClickListener {
-            alert {
-                message = getString(R.string.sure_to_finish_pick_order_alert)
-                positiveButton(android.R.string.yes.toString()) {
-//                    viewModel.finishPickOrder()
-                }
-                negativeButton(android.R.string.no.toString()) { }
-            }.show()
-        }
-
-        binding.startButton.setOnClickListener {
-//            alert {
-//                message = getString(R.string.sure_to_start_pick_order)
-//                positiveButton(android.R.string.yes) {
-            startPickViewModel.startPick(savePref.companyId, pickOrder.id)
-//                }
-//                negativeButton(android.R.string.no) { }
-//            }.show()
-        }
+    private fun openPickScreen() {
+        val intent = Intent(this, PickActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 
     private fun observeStartPick() {
@@ -397,15 +290,8 @@ class PickItemsActivity : BaseActivity() {
     }
 
     private fun handleStart(startPickEntity: StartPickEntity) {
-        binding.startPickOrderContainer.visibility = View.GONE
-        binding.recyclerView.visibility = View.VISIBLE
-        adapter = PickItemsAdapter(startPickEntity.fulfillment.items, mOnClickListener)
-        binding.recyclerView.apply {
-            val linearLayoutManager = LinearLayoutManager(context)
-            layoutManager = linearLayoutManager
-            adapter = this@PickItemsActivity.adapter
-
-        }
+        showStart = false
+        items = startPickEntity.fulfillment.items.toList()
     }
 
     private val barcodeLauncher = registerForActivityResult(
@@ -429,13 +315,5 @@ class PickItemsActivity : BaseActivity() {
     private fun openBarcodeScanner() {
         val intent = Intent(this, BarcodeScanningActivity::class.java)
         barcodeLauncher.launch(intent)
-    }
-
-
-    override fun onBackPressed() {
-        super.onBackPressed()
-        val intent = Intent(this, PickActivity::class.java)
-        startActivity(intent)
-        finish()
     }
 }

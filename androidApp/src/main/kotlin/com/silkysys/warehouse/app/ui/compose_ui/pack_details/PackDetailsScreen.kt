@@ -1,4 +1,4 @@
-package com.silkysys.warehouse.app.ui.compose_ui.packdetails
+package com.silkysys.warehouse.app.ui.compose_ui.pack_details
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,12 +42,6 @@ import com.silkysys.warehouse.sharedcode.domain.packing.packDetails.entity.PackD
 private val BoldMediumFont = FontFamily(Font(R.font.bold_medium))
 private val RegularFont = FontFamily(Font(R.font.regular))
 
-/**
- * Compose replacement for `activity_pack_details.xml`:
- * gradient app bar (back + the pack name), the list of [PackDetailsItem]s, the "You didn't
- * packed any item." state, and either the round "add" button (while the pack can still be
- * packed) or the "Finish" button.
- */
 @Composable
 fun PackDetailsScreen(
     packName: String?,

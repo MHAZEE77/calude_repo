@@ -27,7 +27,7 @@ import com.silkysys.warehouse.app.ui.utility.BarcodeScanningActivity
 import com.silkysys.warehouse.app.ui.utility.SavePref
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
 import com.silkysys.warehouse.sharedcode.domain.putAwayModule.putAway.entity.PutAwayScanEntity
-import com.silkysys.warehouse.wms.app.ui.utility.ToastHelper.toast
+import com.silkysys.warehouse.app.ui.utility.ToastHelper.toast
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.launchIn

@@ -28,10 +28,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.silkysys.warehouse.R
 
-/**
- * Replaces `ShimmerFrameLayout` + `started_place_holder_row.xml`.
- * The brush sweeps a highlight over the placeholder colour, like the facebook shimmer did.
- */
 @Composable
 private fun rememberShimmerBrush(): Brush {
     val density = LocalDensity.current.density
@@ -53,7 +49,6 @@ private fun rememberShimmerBrush(): Brush {
     )
 }
 
-/** One `started_place_holder_row.xml` (60dp high, 16dp padding, four grey blocks). */
 @Composable
 fun StartedPlaceHolderRow(brush: Brush, modifier: Modifier = Modifier) {
     Row(

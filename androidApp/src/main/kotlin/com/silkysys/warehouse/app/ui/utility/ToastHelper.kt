@@ -1,4 +1,4 @@
-package com.silkysys.warehouse.wms.app.ui.utility
+package com.silkysys.warehouse.app.ui.utility
 
 import android.content.Context
 import android.widget.Toast
@@ -24,11 +24,11 @@ object ToastHelper {
 
     // Extension function for Context
     fun Context.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
-        ToastHelper.show(this, message, duration)
+        show(this, message, duration)
     }
 
     // Extension function for Fragment
     fun Fragment.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
-        ToastHelper.show(this, message, duration)
+        show(this, message, duration)
     }
 }

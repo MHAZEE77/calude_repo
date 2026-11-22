@@ -54,12 +54,12 @@ import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.autentcation.main.adapter.GridViewModal
 import kotlinx.coroutines.launch
 
-/** The entries of the old `@menu/menu_item` NavigationView menu. */
+
 enum class MainDrawerItem { Home, Profile, ChangeLanguage, Logout }
 
 private val BoldMediumFont = FontFamily(Font(R.font.bold_medium))
 
-// Normal state of the old @color/nav_item_colors selector
+
 private val NavItemColor = Color(0xFF8EA0B9)
 
 
@@ -245,10 +245,6 @@ private fun DrawerEntry(
     )
 }
 
-/**
- * Replaces `grid_item.xml`: CardView (8dp corners, 10dp elevation, 8dp margin,
- * cardUseCompatPadding) with a 70dp icon and a gradient_start title bar.
- */
 @Composable
 private fun ServiceCard(service: GridViewModal, onClick: () -> Unit) {
     val shape = RoundedCornerShape(8.dp)

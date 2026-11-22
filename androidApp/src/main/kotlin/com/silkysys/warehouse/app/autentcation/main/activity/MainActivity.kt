@@ -23,7 +23,6 @@ import com.silkysys.warehouse.app.packing.pack.activity.PackActivity
 import com.silkysys.warehouse.app.picking.pick.activity.PickActivity
 import com.silkysys.warehouse.app.putAway.putAway.activity.PutAwayActivity
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
-import com.silkysys.warehouse.app.ui.adapter.MainAdapter
 import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.ChangeLanguageDialog
 import com.silkysys.warehouse.app.ui.compose_ui.MainDrawerItem
 import com.silkysys.warehouse.app.ui.compose_ui.MainScreen
@@ -34,7 +33,7 @@ import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
 import com.silkysys.warehouse.domain.autentcation.logOut.entity.LogOutEntity
 import com.silkysys.warehouse.sharedcode.data.autentcation.logOut.dto.LogOutResponse
 import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
-import com.silkysys.warehouse.wms.app.ui.utility.alert
+import com.silkysys.warehouse.app.ui.utility.alert
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.android.ext.android.inject
@@ -48,8 +47,6 @@ class MainActivity : BaseActivity() {
 
     // Properties
     private var showProgress by mutableStateOf(false)
-    private lateinit var adapter: MainAdapter
-    private var isOpenPickActivity = false
     private val mainViewModel: MainViewModel by viewModel()
 
     private val savePref: SavePref by inject()

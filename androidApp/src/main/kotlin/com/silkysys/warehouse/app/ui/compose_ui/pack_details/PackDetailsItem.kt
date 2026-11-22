@@ -1,4 +1,4 @@
-package com.silkysys.warehouse.app.ui.compose_ui.packdetails
+package com.silkysys.warehouse.app.ui.compose_ui.pack_details
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,15 +29,9 @@ import com.silkysys.warehouse.sharedcode.domain.packing.packDetails.entity.PackD
 private val BoldMediumFont = FontFamily(Font(R.font.bold_medium))
 private val RegularFont = FontFamily(Font(R.font.regular))
 
-// ?android:textColorPrimary of the old light theme (the two plain chip TextViews used it)
 private val TextColorPrimary = Color(0xDE000000)
 
-/**
- * Compose replacement for `pack_details_item.xml` + the bind code of PackDetailsAdapter.
- *
- * Left column: name, Height, Length, UOM chip. Right column: Quantity, Width, Weight,
- * "Is Fragile" chip (Yes / No).
- */
+
 @Composable
 fun PackDetailsItem(
     item: PackDetailsEntity.PackList,

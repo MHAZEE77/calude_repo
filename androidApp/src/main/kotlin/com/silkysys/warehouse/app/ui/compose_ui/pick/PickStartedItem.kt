@@ -24,10 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.silkysys.warehouse.R
 import com.silkysys.warehouse.sharedcode.domain.picking.pick.entity.PickEntity
 
-/**
- * Compose replacement for `pick_starte_item.xml` + the bind code of PickStartedAdapter.
- * Columns: #id | name | picked/total | status.
- */
+
 @Composable
 fun PickStartedItem(
     item: PickEntity.Fulfillments.Started,

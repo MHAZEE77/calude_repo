@@ -3,20 +3,22 @@ package com.silkysys.warehouse.app.ui.utility.extension
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
+import android.content.ContextWrapper
 import android.location.Location
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.view.LayoutInflater
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.MutableLiveData
 import com.google.android.gms.maps.model.LatLng
 import com.silkysys.warehouse.R
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
-import com.silkysys.warehouse.wms.app.ui.utility.alert
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.ErrorAlertDialog
+import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.SuccessAlertDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -25,34 +27,72 @@ fun Context.showErrorAlert(
     buttonName: String = getString(android.R.string.ok).capitalize(),
     callback: (() -> Unit)? = null
 ) {
-    val view = LayoutInflater.from(this).inflate(R.layout.alert_fali_layout, LinearLayout(this))
-    val textView = view.findViewById<TextView>(R.id.textView)
-    textView.text = message
-    alert {
-        this.title = getString(R.string.error).capitalize()
-//        this.message = message
-        this.customView = view
-        this.isCancelable = false
-        this.positiveButton(buttonName) { callback?.invoke() }
-    }.show()
+    showStatusAlert(
+        isError = true,
+        title = getString(R.string.error).capitalize(),
+        message = message,
+        buttonName = buttonName,
+        callback = callback,
+    )
 }
 fun Context.showToast(message: String){
     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
 }
 
 fun Context.showSuccessAlert(message: String, callback: (() -> Unit)? = null) {
-    val view = LayoutInflater.from(this).inflate(R.layout.alert_success_layout, LinearLayout(this))
-    val textView = view.findViewById<TextView>(R.id.textView)
-    textView.text = message
-    alert {
-        this.title = getString(R.string.success).capitalize()
-//        this.message = message
-        this.customView = view
-        this.isCancelable = false
-        this.positiveButton(getString(android.R.string.ok).capitalize()) { callback?.invoke() }
-    }.show()
+    showStatusAlert(
+        isError = false,
+        title = getString(R.string.success).capitalize(),
+        message = message,
+        buttonName = getString(android.R.string.ok).capitalize(),
+        callback = callback,
+    )
 }
 
+private fun Context.showStatusAlert(
+    isError: Boolean,
+    title: String,
+    message: String,
+    buttonName: String,
+    callback: (() -> Unit)?,
+) {
+    val activity = findComponentActivity()
+    if (activity == null) {
+        // No activity to host Compose in: plain platform dialog without the icon.
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setCancelable(false)
+            .setPositiveButton(buttonName) { _, _ -> callback?.invoke() }
+            .show()
+        return
+    }
+    if (activity.isFinishing || activity.isDestroyed) return
+
+    val host = ComposeView(activity)
+    val onConfirm = {
+        host.post { (host.parent as? ViewGroup)?.removeView(host) }
+        callback?.invoke()
+        Unit
+    }
+    host.setContent {
+        if (isError) {
+            ErrorAlertDialog(title = title, message = message, confirmText = buttonName, onConfirm = onConfirm)
+        } else {
+            SuccessAlertDialog(title = title, message = message, confirmText = buttonName, onConfirm = onConfirm)
+        }
+    }
+    activity.addContentView(
+        host,
+        ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT),
+    )
+}
+
+private tailrec fun Context.findComponentActivity(): ComponentActivity? = when (this) {
+    is ComponentActivity -> this
+    is ContextWrapper -> baseContext.findComponentActivity()
+    else -> null
+}
 
 fun BaseActivity.vibratePhone() {
     val vibrator = activeContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -119,5 +159,3 @@ fun Context.customAlertDialog(title: String?, message: String) {
         .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
         .show()
 }
-
-

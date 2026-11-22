@@ -18,7 +18,7 @@ import com.silkysys.warehouse.app.packing.packDetails.PackStatus
 import com.silkysys.warehouse.app.ui.activity.BaseActivity
 import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppAlertDialog
 import com.silkysys.warehouse.app.ui.compose_ui.dialog_boxes.AppProgressDialog
-import com.silkysys.warehouse.app.ui.compose_ui.packdetails.PackDetailsScreen
+import com.silkysys.warehouse.app.ui.compose_ui.pack_details.PackDetailsScreen
 import com.silkysys.warehouse.app.ui.utility.SavePref
 import com.silkysys.warehouse.app.ui.utility.extension.showErrorAlert
 import com.silkysys.warehouse.sharedcode.domain.packing.finishPack.entity.FinishPackEntity

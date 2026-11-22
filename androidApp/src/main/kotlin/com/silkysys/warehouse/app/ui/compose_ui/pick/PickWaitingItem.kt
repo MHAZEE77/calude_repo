@@ -30,11 +30,6 @@ import androidx.compose.runtime.getValue
 
 import androidx.compose.runtime.setValue
 
-
-/**
- * Compose replacement for `pick_waiting_item.xml` + the bind code of PickWaitingAdapter.
- * Tapping the checkbox or the card toggles the selection. Columns: #id | name | total items.
- */
 @Composable
 fun PickWaitingItem(
     item: PickEntity.Fulfillments.Waiting,

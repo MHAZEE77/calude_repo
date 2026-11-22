@@ -19,10 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.silkysys.warehouse.R
 
-/**
- * Compose replacement for `pick_started_header_item.xml`
- * (the hidden `dateTextView` of the XML is not rendered).
- */
+
 @Composable
 fun PickStartedHeaderItem(modifier: Modifier = Modifier) {
     Row(

@@ -35,11 +35,6 @@ import java.time.format.DateTimeFormatter
 private val BoldMediumFont = FontFamily(Font(R.font.bold_medium))
 private val RegularFont = FontFamily(Font(R.font.regular))
 
-/**
- * Compose replacement for `pack_item.xml` + the bind code of PackAdapter.
- * Left column: document name, order id (cut to 20 chars like `android:maxLength="20"`), branch.
- * Right column: "Status" label, status chip, created date.
- */
 @Composable
 fun PackItem(
     item: PackListEntity.Fulfillments,

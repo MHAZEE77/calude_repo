@@ -30,12 +30,6 @@ import androidx.compose.ui.unit.sp
 import com.silkysys.warehouse.R
 import com.silkysys.warehouse.sharedcode.domain.packing.packItems.entity.PackItemsEntity
 
-/**
- * Compose replacement for `items_in_pack.xml` + the bind code of ItemsInPackAdapter:
- * item name (cut to 15 chars) | allowable quantity (centred) | [-] packed quantity [+].
- * An item with allowable quantity 0 is disabled. An invalid quantity (more than allowed)
- * turns the field red (it used to show `Invalid Quantity` as the EditText error).
- */
 @Composable
 fun ItemsInPackItem(
     item: PackItemsEntity.PackItems,

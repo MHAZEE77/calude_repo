@@ -18,10 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.silkysys.warehouse.R
 
-/**
- * Compose replacement for `pick_waiting_header_item.xml`.
- * The checkbox is the "select all" box (PickWaitingAdapter.updateAllItemCheck).
- */
 @Composable
 fun PickWaitingHeaderItem(
     allSelected: Boolean,

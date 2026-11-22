@@ -38,7 +38,7 @@ import com.silkysys.warehouse.sharedcode.data.base.WrappedResponse
 import com.silkysys.warehouse.sharedcode.domain.addstock.AddStockRequest
 import com.silkysys.warehouse.sharedcode.domain.addstock.ProductInfoEntity
 import com.silkysys.warehouse.sharedcode.domain.addstock.ProductInfoResponse
-import com.silkysys.warehouse.wms.app.ui.utility.ToastHelper.toast
+import com.silkysys.warehouse.app.ui.utility.ToastHelper.toast
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.androidx.viewmodel.ext.android.viewModel
