@@ -107,8 +107,9 @@ dependencies {
     testImplementation(libs.kotlin.testJunit)
     implementation(libs.kotlinx.datetime)
     implementation(libs.barcode.scanning)
-    implementation(libs.compose.foundation)
 
+    implementation(libs.compose.material3)
+    implementation(libs.compose.foundation)
 }
 
 android {
